@@ -1,5 +1,5 @@
 import discord
-import token
+import dtoken
 from rpg import RPG
 
 # Main settings
@@ -7,7 +7,7 @@ from rpg import RPG
 console = True
 prefix = '#'
 password = '1717'
-token = token.token
+token = dtoken.token
 guild = 775211413882798120
 embed_color = 0xfecc4e
 hentai_lib = '2_9'
