@@ -6,7 +6,7 @@ from rpg import RPG
 console = True
 prefix = '#'
 password = '1717'
-token = 'Nzc3ODgxMzQ3Nzk2NTAwNTIx.X7J4dQ.dbO2SFxPiWA02UWytfzM4Hv23FQ'
+token = ''
 guild = 775211413882798120
 embed_color = 0xfecc4e
 hentai_lib = '2_9'
