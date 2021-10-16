@@ -1,0 +1,228 @@
+{
+    "members": {
+        "526690932075003913": {
+            "daily": false,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 1000100.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "540470006828367883": {
+            "daily": false,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 10000000000,
+            "work": 3,
+            "work_timeout": 1634360184.480107
+        },
+        "552041970529468435": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "616506179413213195": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "634684997751668736": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "676994432557514755": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "690911713402552350": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "710404229759631381": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "713960591403778090": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "713969416127250535": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "754281519576645663": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "768844269938147388": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "769230948159324190": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "775214467188391936": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "783940212555251713": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "788411954062557216": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "864271654854459443": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "886171627644129351": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "887371777209143306": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        },
+        "897398630326075412": {
+            "daily": true,
+            "inventory": {
+                "armor": 0,
+                "items": [],
+                "weapon": 0
+            },
+            "money": 0.0,
+            "work": 0,
+            "work_timeout": 0
+        }
+    },
+    "settings": {
+        "last_update_day": 1634342001,
+        "last_update_random_coins": 1634342001
+    }
+}
