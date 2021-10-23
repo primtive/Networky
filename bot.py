@@ -568,17 +568,15 @@ async def leaderboard(ctx: SlashContext):
     for k in sorted(members, key=members.get):
         leaderboard[k] = members[k]
 
-    leaderboard = {v: k for k, v in leaderboard.items()}
-
-    count = 1
+    count = len(leaderboard)
     text = ''
     for member_id, money in leaderboard.items():
         if money == 0:
             continue
         member = discord.utils.get(client.get_all_members(), id=int(member_id))
-        text = text + str(count) + '. ' + member.display_name + '   -   ' + str(round(money)) + ' $\n'
+        text = str(count) + '. ' + member.display_name + '   -   ' + str(round(money)) + ' $\n' + text
 
-        count = count + 1
+        count = count - 1
 
     embed = discord.Embed(title='Таблица лидеров:',
                           description=text,
