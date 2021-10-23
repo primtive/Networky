@@ -4,6 +4,27 @@ from utils import get_economic, set_economic
 from discord_slash import SlashContext
 
 
+def get_money(member: discord.Member):
+    eco = get_economic()
+    return eco['members'][str(member.id)]['money']
+
+
+def set_money(member: discord.Member, money: float):
+    eco = get_economic()
+    eco['members'][str(member.id)]['money'] = money
+    set_economic(eco)
+
+
+def take_money(member: discord.Member, money: float):
+    eco = get_economic()
+    set_money(member, eco['members'][str(member.id)]['money'] - money)
+
+
+def give_money(member: discord.Member, money: float):
+    eco = get_economic()
+    set_money(member, eco['members'][str(member.id)]['money'] + money)
+
+
 class Economic:
 
     def __init__(self):
@@ -81,23 +102,6 @@ class Economic:
             'price': 2500000
         },
     }
-
-    def get_money(self, member: discord.Member):
-        eco = get_economic()
-        return eco['members'][str(member.id)]['money']
-
-    def set_money(self, member: discord.Member, money: float):
-        eco = get_economic()
-        eco['members'][str(member.id)]['money'] = money
-        set_economic(eco)
-
-    def take_money(self, member: discord.Member, money: float):
-        eco = get_economic()
-        self.set_money(member, eco['members'][str(member.id)]['money'] - money)
-
-    def give_money(self, member: discord.Member, money: float):
-        eco = get_economic()
-        self.set_money(member, eco['members'][str(member.id)]['money'] + money)
 
     def reset_economic(self, ctx: SlashContext):
 

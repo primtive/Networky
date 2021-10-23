@@ -1,14 +1,14 @@
-import asyncio
-import discord
 import os
-import config
 import hmtai
-import random
+import discord
+import asyncio
 import time
 import json
 import datetime
 from rpg import RPG
 from economic import Economic
+import economic
+from lottery import *
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic
 from admin_commands import mute, unmute
 from discord.ext import commands
@@ -72,7 +72,7 @@ async def on_component(ctx: ComponentContext):  # buttons handler
     if ctx.origin_message_id in random_coins.keys():
         await ctx.origin_message.channel.send(ctx.author.display_name + ' подобрал ' + str(random_coins[ctx.origin_message_id]) + ' $!')
         await ctx.origin_message.delete()
-        economics.give_money(ctx.author, random_coins[ctx.origin_message_id])
+        economic.give_money(ctx.author, random_coins[ctx.origin_message_id])
 
     for voting in votings.values():
         labels = []
@@ -80,6 +80,13 @@ async def on_component(ctx: ComponentContext):  # buttons handler
             labels.append(component['label'])
         if ctx.component.get('label') in labels:
             await voting.vote(ctx)
+
+    for lottery in lotteries.values():
+        labels = []
+        for component in lottery.components:
+            labels.append(component['label'])
+        if ctx.component.get('label') in labels:
+            await lottery.take_part(ctx)
 
 
 async def send_for_three_seconds(ctx: SlashContext, text: str):
@@ -90,7 +97,7 @@ async def send_for_three_seconds(ctx: SlashContext, text: str):
 
 async def time_checker():
 
-    try:
+    while True:
 
         file = open(config.economic_file, 'r')
         now_time = int(time.mktime(time.gmtime()))
@@ -113,7 +120,7 @@ async def time_checker():
 
             coins = random.randint(100, 200)
 
-            channel = client.get_guild(config.guild).get_channel(config.beta_test_channel)
+            channel = client.get_guild(config.guild).get_channel(config.main_channel)
 
             msg = await channel.send('Деньги сыпятся с неба!\nУспей подобрать ' + str(coins) + ' $!',
                                      components=[action_rows])
@@ -124,12 +131,7 @@ async def time_checker():
 
             set_economic(eco)
 
-    except BaseException as ex:
-        print(f"Unexpected {ex=}, {type(ex)=}")
-
-    await asyncio.sleep(1)
-
-    await time_checker()
+        await asyncio.sleep(1)
 
 
 #
@@ -268,13 +270,73 @@ async def votings_list(ctx: SlashContext):
         await send_for_three_seconds(ctx, config.role_perm_error.format(min_role))
 
 
+@slash.slash(name='lottery',
+             description='Позволяет проводить лотереи',
+             guild_ids=[config.guild])
+async def lottery(ctx: SlashContext, name: str, money: int):
+    if ctx.author == ctx.guild.owner:
+        await Lottery(client=client,
+                      name=name,
+                      money=money,
+                      ctx=ctx).send_lottery()
+    else:
+        await send_for_three_seconds(ctx, config.owner_perm_error)
+
+
+@slash.slash(name='complete_lottery',
+             description='Завершает лотереи',
+             guild_ids=[config.guild])
+async def complete_lottery(ctx: SlashContext, name: str):
+    lottery = lotteries[name]
+    if lottery:
+        if ctx.author == ctx.guild.owner:
+            await lottery.complete_lottery(ctx)
+        else:
+            await send_for_three_seconds(ctx, config.owner_perm_error)
+    else:
+        await send_for_three_seconds(ctx, config.lottery_not_found)
+
+
+@slash.slash(name='cancel_lottery',
+             description='Отменяет лотереи',
+             guild_ids=[config.guild])
+async def cancel_lottery(ctx: SlashContext, name: str):
+    lottery = lotteries[name]
+    if lottery:
+        if ctx.author == ctx.guild.owner:
+            await lottery.cancel_lottery(ctx)
+        else:
+            await send_for_three_seconds(ctx, config.owner_perm_error)
+    else:
+        await send_for_three_seconds(ctx, config.voting_not_found)
+
+
+@slash.slash(name='lotteries_list',
+             description='Выводит список всех лотерей, проводимых в данное время.',
+             guild_ids=[config.guild])
+async def lotteries_list(ctx: SlashContext):
+    if ctx.author == ctx.guild.owner:
+        text = ''
+        if len(lotteries.items()) > 0:
+            for name, lottery in lotteries.items():
+                text = text + name + '\n'
+        else:
+            text = 'В данный момент лотереи не проводятся.'
+        embed = discord.Embed(title='Лотереи, проводимые в данный момент:',
+                              description=text,
+                              color=config.embed_color)
+        await ctx.reply(embed=embed)
+    else:
+        await send_for_three_seconds(ctx, config.owner_perm_error)
+
+
 #
 
 
-#@slash.slash(name='hentai',
-#             description='Отправляет хентай.',
-#             guild_ids=[config.guild])
-async def hentai(ctx, num: int = 1, category: str = ''):
+@slash.slash(name='hentai',
+             description='Отправляет хентай.',
+             guild_ids=[config.guild])
+async def hentai(ctx: SlashContext, num: int = 1, category: str = ''):
     if ctx.channel.id in [config.nsfw_channel, config.test_channel, config.beta_test_channel]:
         if num < 31:
             if num > 0:
@@ -292,10 +354,10 @@ async def hentai(ctx, num: int = 1, category: str = ''):
         await send_for_three_seconds(ctx, config.channel_error)
 
 
-#@slash.slash(name='hentai_categories',
-#             description='Отправляет категории хентая.',
-#             guild_ids=[config.guild])
-async def hentai_categories(ctx):
+@slash.slash(name='hentai_categories',
+             description='Отправляет категории хентая.',
+             guild_ids=[config.guild])
+async def hentai_categories(ctx: SlashContext):
     filenames = next(os.walk('C:\\Program Files\\Python38\\Lib\\site-packages\\hmtai\\hmtai_libv' + config.hentai_lib),
                      (None, None, []))[2]
     text = ''
@@ -416,7 +478,7 @@ async def money(ctx: SlashContext, member: discord.Member = None):
         member = ctx.author
 
     if not member.bot:
-        await ctx.reply('Баланс ' + member.display_name + ': ' + str(economics.get_money(member)) + ' $')
+        await ctx.reply('Баланс ' + member.display_name + ': ' + str(economic.get_money(member)) + ' $')
     else:
         await ctx.reply(config.bot_error)
 
@@ -426,7 +488,7 @@ async def money(ctx: SlashContext, member: discord.Member = None):
              guild_ids=[config.guild])
 async def give_money(ctx: SlashContext, member: discord.Member, money: float):
     if ctx.author == ctx.guild.owner:
-        economics.give_money(member, money)
+        economic.give_money(member, money)
         await ctx.reply(ctx.author.display_name + ' дал ' + member.display_name + ' ' + str(money) + ' $')
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
@@ -437,7 +499,7 @@ async def give_money(ctx: SlashContext, member: discord.Member, money: float):
              guild_ids=[config.guild])
 async def take_money(ctx: SlashContext, member: discord.Member, money: float):
     if ctx.author == ctx.guild.owner:
-        economics.take_money(member, money)
+        economic.take_money(member, money)
         await ctx.reply(ctx.author.display_name + ' отнял у ' + member.display_name + ' ' + str(money) + ' $')
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
@@ -448,7 +510,7 @@ async def take_money(ctx: SlashContext, member: discord.Member, money: float):
              guild_ids=[config.guild])
 async def set_money(ctx: SlashContext, member: discord.Member, money: float):
     if ctx.author == ctx.guild.owner:
-        economics.set_money(member, money)
+        economic.set_money(member, money)
         await ctx.reply(ctx.author.display_name + ' установил у ' + member.display_name + ' ' + str(money) + ' $')
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
@@ -460,9 +522,9 @@ async def set_money(ctx: SlashContext, member: discord.Member, money: float):
 async def pay(ctx: SlashContext, member: discord.Member, money: float):
     if not member.bot:
         if ctx.author != member:
-            if economics.get_money(ctx.author) >= money:
-                economics.give_money(member, money)
-                economics.take_money(ctx.author, money)
+            if economic.get_money(ctx.author) >= money:
+                economic.give_money(member, money)
+                economic.take_money(ctx.author, money)
                 await ctx.reply(ctx.author.display_name + ' передал ' + member.display_name + ' ' + str(money) + ' $')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
@@ -470,6 +532,59 @@ async def pay(ctx: SlashContext, member: discord.Member, money: float):
             await send_for_three_seconds(ctx, config.self_error)
     else:
         await send_for_three_seconds(ctx, config.bot_error)
+
+
+@slash.slash(name='bet',
+             description='Позваляет сделать ставку',
+             guild_ids=[config.guild])
+async def bet(ctx: SlashContext, money: int):
+    if money > 0:
+        if economic.get_money(ctx.author) >= money:
+            if random.choice([True, False]):
+                await ctx.reply(ctx.author.mention + ' выиграл ' + str(money) + ' $')
+                economic.give_money(ctx.author, money)
+            else:
+                await ctx.reply(ctx.author.mention + ' проиграл ' + str(money) + ' $')
+                economic.take_money(ctx.author, money)
+        else:
+            await send_for_three_seconds(ctx, config.not_enough_money_error)
+    else:
+        await send_for_three_seconds(ctx, config.lower_zero_time_error)
+
+
+
+@slash.slash(name='leaderboard',
+             description='Отображает таблицу лидеров',
+             guild_ids=[config.guild])
+async def leaderboard(ctx: SlashContext):
+    eco = get_economic()
+    members = {}
+    leaderboard = {}
+
+    for id, member in eco['members'].items():
+        if member['money'] > 0:
+            members[id] = member['money']
+
+    for k in sorted(members, key=members.get):
+        leaderboard[k] = members[k]
+
+    leaderboard = {v: k for k, v in leaderboard.items()}
+
+    count = 1
+    text = ''
+    for member_id, money in leaderboard.items():
+        if money == 0:
+            continue
+        member = discord.utils.get(client.get_all_members(), id=int(member_id))
+        text = text + str(count) + '. ' + member.display_name + '   -   ' + str(round(money)) + ' $\n'
+
+        count = count + 1
+
+    embed = discord.Embed(title='Таблица лидеров:',
+                          description=text,
+                          color=config.embed_color)
+    await ctx.reply(embed=embed)
+    print(leaderboard)
 
 
 @slash.slash(name='daily',
@@ -480,7 +595,7 @@ async def daily(ctx: SlashContext):
 
     if eco['members'][str(ctx.author.id)]['daily']:
         eco['members'][str(ctx.author.id)]['daily'] = False
-        economics.give_money(ctx.author, float(config.daily_coins))
+        economic.give_money(ctx.author, float(config.daily_coins))
         eco['members'][str(ctx.author.id)]['money'] = eco['members'][str(ctx.author.id)]['money'] + float(config.daily_coins)
         set_economic(eco)
         await send_for_three_seconds(ctx, config.daily_success)
@@ -517,8 +632,8 @@ async def buy_role(ctx: SlashContext, id: int):
     if id <= len(economics.roles_shop.keys()):
         role = await get_role_by_id(ctx, economics.roles_shop[id]['id'])
         if not role in ctx.author.roles:
-            if economics.get_money(ctx.author) >= economics.roles_shop[id]['price']:
-                economics.take_money(ctx.author, float(id))
+            if economic.get_money(ctx.author) >= economics.roles_shop[id]['price']:
+                economic.take_money(ctx.author, float(id))
                 await ctx.author.add_roles(role)
                 await ctx.reply('Поздравляем с покупкой роли ' + role.name + '!')
             else:
@@ -566,10 +681,10 @@ async def buy_work(ctx: SlashContext, id: int):
             whitelisted_ids.append(item_id)
     if id in whitelisted_ids:
         if eco['members'][str(ctx.author.id)]['work'] < id:
-            if economics.get_money(ctx.author) >= economics.works[id]['price']:
+            if economic.get_money(ctx.author) >= economics.works[id]['price']:
                 eco['members'][str(ctx.author.id)]['work'] = id
                 set_economic(eco)
-                economics.take_money(ctx.author, economics.works[id]['price'])
+                economic.take_money(ctx.author, economics.works[id]['price'])
                 await ctx.reply('Вас приняли на работу ' + economics.works[id]['name'] + '!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
@@ -638,10 +753,10 @@ async def buy_weapon(ctx: SlashContext, id: int):
             whitelisted_ids.append(item_id)
     if id in whitelisted_ids:
         if eco['members'][str(ctx.author.id)]['inventory']['weapon'] < id:
-            if economics.get_money(ctx.author) >= RPG.weapons[id]['price']:
+            if economic.get_money(ctx.author) >= RPG.weapons[id]['price']:
                 eco['members'][str(ctx.author.id)]['inventory']['weapon'] = id
                 set_economic(eco)
-                economics.take_money(ctx.author, RPG.weapons[id]['price'])
+                economic.take_money(ctx.author, RPG.weapons[id]['price'])
                 await ctx.reply('Поздравляем с покупкой ' + RPG.weapons[id]['name'] + '!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
@@ -662,10 +777,10 @@ async def buy_armor(ctx: SlashContext, id: int):
             whitelisted_ids.append(item_id)
     if id in whitelisted_ids:
         if eco['members'][str(ctx.author.id)]['inventory']['armor'] < id:
-            if economics.get_money(ctx.author) >= RPG.armors[id]['price']:
+            if economic.get_money(ctx.author) >= RPG.armors[id]['price']:
                 eco['members'][str(ctx.author.id)]['inventory']['armor'] = id
                 set_economic(eco)
-                economics.take_money(ctx.author, RPG.armors[id]['price'])
+                economic.take_money(ctx.author, RPG.armors[id]['price'])
                 await ctx.reply('Поздравляем с покупкой ' + RPG.armors[id]['name'] + '!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
@@ -712,7 +827,7 @@ async def inventory(ctx: SlashContext):
 async def restart(ctx: SlashContext):
     if ctx.author == ctx.guild.owner:
         await ctx.reply('Перезагружаюсь')
-        os.system('"C:\\Program Files\\Python38\\python.exe" ' + str(os.getcwd() + '\\bot.py') + '')
+        os.system('python3 ' + str(os.getcwd() + '\\bot.py') + '')
         print('exiting')
         exit()
     else:
