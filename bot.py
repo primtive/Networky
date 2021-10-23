@@ -1,5 +1,5 @@
 import os
-import hmtai
+import requests
 import discord
 import asyncio
 import time
@@ -7,7 +7,7 @@ import json
 import datetime
 from rpg import RPG
 from economic import Economic
-import economic
+import xml.etree.ElementTree as ET
 from lottery import *
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic
 from admin_commands import mute, unmute
@@ -48,7 +48,7 @@ async def on_member_join(member):
 
 
 @client.event
-async def on_message(msg):
+async def on_message(msg: discord.Message):
     pass
 
 
@@ -336,16 +336,14 @@ async def lotteries_list(ctx: SlashContext):
 @slash.slash(name='hentai',
              description='Отправляет хентай.',
              guild_ids=[config.guild])
-async def hentai(ctx: SlashContext, num: int = 1, category: str = ''):
+async def hentai(ctx: SlashContext, num: int = 1, tags: str = ''):
     if ctx.channel.id in [config.nsfw_channel, config.test_channel, config.beta_test_channel]:
         if num < 31:
             if num > 0:
-                if category != '':
-                    for i in range(num):
-                        await ctx.send(hmtai.useHM(version=config.hentai_lib, category=category))
-                else:
-                    for i in range(num):
-                        await ctx.send(hmtai.useHM(version=config.hentai_lib, category='hentai'))
+                r = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit={num}&tags={tags}&pid={random.randint(0,6650)}')
+                root = ET.fromstring(r.text)
+                for post in root.findall('post'):
+                    await ctx.send(post.get('file_url'))
             else:
                 await send_for_three_seconds(ctx, config.lower_zero_time_error)
         else:
