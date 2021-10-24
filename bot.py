@@ -68,6 +68,11 @@ async def on_message_delete(msg: discord.Message):
 
 
 @client.event
+async def on_message_edit(old_msg: discord.Message, new_msg: discord.Message):
+    write_log(str(old_msg.id) + '/' + old_msg.author.display_name + ': ' + old_msg.content + ' > ' + new_msg.content)
+
+
+@client.event
 async def on_component(ctx: ComponentContext):  # buttons handler
     # voting handler
 
