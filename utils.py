@@ -2,6 +2,7 @@ import discord
 import config
 import json
 from discord.utils import get
+import time
 
 
 async def get_member_by_role(client: discord.Client, role: discord.Role):
@@ -20,3 +21,9 @@ def get_economic():
 def set_economic(eco: dict):
     file = open(config.economic_file, 'w')
     file.write(json.dumps(eco, indent=4, sort_keys=True))
+
+
+def write_log(text: str):
+    f = open(config.log_filename, 'a')
+    f.write(f'[{time.strftime("%d %b %Y %H:%M:%S")}] {text}\n')
+    f.close()

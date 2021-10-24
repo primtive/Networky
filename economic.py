@@ -1,6 +1,6 @@
 import discord
 import config
-from utils import get_economic, set_economic
+from utils import get_economic, set_economic, write_log
 from discord_slash import SlashContext
 
 
@@ -13,16 +13,19 @@ def set_money(member: discord.Member, money: float):
     eco = get_economic()
     eco['members'][str(member.id)]['money'] = money
     set_economic(eco)
+    write_log(member.display_name + ' установлено ' + str(money) + ' $')
 
 
 def take_money(member: discord.Member, money: float):
     eco = get_economic()
     set_money(member, eco['members'][str(member.id)]['money'] - money)
+    write_log(member.display_name + ' забрано ' + str(money) + ' $')
 
 
 def give_money(member: discord.Member, money: float):
     eco = get_economic()
     set_money(member, eco['members'][str(member.id)]['money'] + money)
+    write_log(member.display_name + ' выдано ' + str(money) + ' $')
 
 
 class Economic:
@@ -117,11 +120,12 @@ class Economic:
 
     def add_member(self, member: discord.Member):
         eco = get_economic()
-        eco['members'][str(member.id)] = {'money': 0.0,
-                                          'inventory': {'weapon': 0,
-                                                        'armor': 0,
-                                                        'items': []},
-                                          'daily': True,
-                                          'work': 0,
-                                          'work_timeout': 0}
+        if not eco['members'][str(member.id)]:
+            eco['members'][str(member.id)] = {'money': 0.0,
+                                              'inventory': {'weapon': 0,
+                                                            'armor': 0,
+                                                            'items': []},
+                                              'daily': True,
+                                              'work': 0,
+                                              'work_timeout': 0}
         set_economic(eco)

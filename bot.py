@@ -6,19 +6,19 @@ import time
 import json
 import datetime
 import config
-import logging
 import random
 from rpg import RPG
-from economic import Economic, get_money, set_money, take_money, give_money
+import economic
+from lottery import Lottery, lotteries
 import xml.etree.ElementTree as ET
-from lottery import Lottery
-from utils import get_member_by_role, get_role_by_id, get_economic, set_economic
+from utils import get_member_by_role, get_role_by_id, get_economic, set_economic, write_log
 from admin_commands import mute, unmute
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext, ComponentContext, manage_components, ButtonStyle
 from voting import votings, Voting
 
 print('starting')
+write_log('starting')
 
 intents = discord.Intents.default()
 intents.members = True
@@ -28,12 +28,13 @@ slash = SlashCommand(client, sync_commands=True)
 random_coins = {}
 rpg_shops = {}
 
-economics = Economic()
+economics = economic.Economic()
 
 
 @client.event
 async def on_ready():
     print('online')
+    write_log('online')
 
     await client.change_presence(activity=discord.Activity(type=config.default_activity_type,
                                                            name=config.default_activity_text))
@@ -52,7 +53,18 @@ async def on_member_join(member):
 
 @client.event
 async def on_message(msg: discord.Message):
-    pass
+    if len(msg.embeds) > 0:
+        write_log(str(msg.id) + '/' + msg.author.display_name + ': ' + msg.embeds[0].title)
+    else:
+        write_log(str(msg.id) + '/' + msg.author.display_name + ': ' + msg.content)
+    if len(msg.attachments) > 0:
+        for attachment in msg.attachments:
+            write_log(str(msg.id) + '/' + msg.author.display_name + ': ' + attachment.url)
+
+
+@client.event
+async def on_message_delete(msg: discord.Message):
+    write_log(str(msg.id) + '/' + msg.author.display_name + ': ' + msg.content + ' - было удалено')
 
 
 @client.event
@@ -116,7 +128,7 @@ async def time_checker():
 
             set_economic(eco)
 
-        if now_time - eco['settings']['last_update_random_coins'] > 10800:
+        if now_time - eco['settings']['last_update_random_coins'] > 21600:
 
             actions = [manage_components.create_button(label='Подобрать!', style=ButtonStyle.green)]
             action_rows = manage_components.create_actionrow(*actions)
@@ -845,15 +857,6 @@ async def off(ctx: SlashContext):
         exit()
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
-
-
-def write_log(text: str):
-    logging.info(text)
-
-
-logging.basicConfig(filename=config.log_filename,
-                    format='[%(asctime)s] %(levelname)s:  %(message)s',
-                    datefmt='%d %b %Y %H:%M:%S')
 
 
 client.run(config.token)
