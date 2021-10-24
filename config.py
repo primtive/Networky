@@ -1,6 +1,5 @@
 import discord
 import dtoken
-from rpg import RPG
 
 # Main settings
 
@@ -13,6 +12,7 @@ embed_color = 0xfecc4e
 hentai_lib = '2_9'
 economic_file = 'save.json'
 rip_image = 'https://media2.giphy.com/media/Wr2747CnxwBSqyK6xt/giphy.gif?cid=ecf05e47imcye4fyk3qnrlg2cd70lctnvovptuq5xqbrrgb9&rid=giphy.gif&ct=g'
+log_filename = 'log.txt'
 
 # Default settings
 
@@ -43,9 +43,10 @@ member_error = 'Укажите участника.'
 password_error = 'Неверный пароль'
 
 voting_not_found = 'Голосование не найдено.'
+lottery_not_found = 'Лотерея не найдена.'
 
-zero_time_error = 'Время не может быть равно нулю.'
-lower_zero_time_error = 'Время не может быть меньше нуля.'
+zero_time_error = 'Число не может быть равно нулю.'
+lower_zero_time_error = 'Число не может быть меньше нуля.'
 
 self_error = 'Вы не можете сделать это действие с собой.'
 bot_error = 'Вы не можете сделать это действие с ботом.'

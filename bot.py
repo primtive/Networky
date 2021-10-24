@@ -5,10 +5,13 @@ import asyncio
 import time
 import json
 import datetime
+import config
+import logging
+import random
 from rpg import RPG
-from economic import Economic
+from economic import Economic, get_money, set_money, take_money, give_money
 import xml.etree.ElementTree as ET
-from lottery import *
+from lottery import Lottery
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic
 from admin_commands import mute, unmute
 from discord.ext import commands
@@ -656,9 +659,9 @@ async def works(ctx: SlashContext):
     for id, work in economics.works.items():
         if id == 0:
             continue
-        text = text + '_ _' + 'Зарплата: ' + str(work['salary']) + ' $\n'
-        text = text + '_ _' + 'Смена: ' + str(round(work['timeout'] / 60)) + ' часов\n'
-        text = text + '_ _' + 'Цена: ' + str(work['price']) + ' $\n'
+        text = text + 'Зарплата: ' + str(work['salary']) + ' $\n'
+        text = text + 'Смена: ' + str(round(work['timeout'] / 60)) + ' часов\n'
+        text = text + 'Цена: ' + str(work['price']) + ' $\n'
         embed.add_field(name='```' + str(id) + '. ' + work['name'] + '```',
                         value=text)
         text = ''
@@ -704,10 +707,10 @@ async def work(ctx: SlashContext):
         text = 'Вы успешно вышли на работу ' + economics.works[member['work']]['name'] + '!\n'
         text = text + 'Вы заработали: ' + str(economics.works[member['work']]['salary']) + ' $'
 
-        await send_for_three_seconds(ctx, text)
-
         eco['members'][str(ctx.author.id)]['money'] = eco['members'][str(ctx.author.id)]['money'] + economics.works[member['work']]['salary']
         eco['members'][str(ctx.author.id)]['work_timeout'] = time.time()
+
+        await send_for_three_seconds(ctx, text)
 
         set_economic(eco)
 
@@ -822,9 +825,10 @@ async def inventory(ctx: SlashContext):
              guild_ids=[config.guild])
 async def restart(ctx: SlashContext):
     if ctx.author == ctx.guild.owner:
+        write_log('restarting')
         await ctx.reply('Перезагружаюсь')
         os.system('python3 ' + str(os.getcwd() + '\\bot.py') + '')
-        print('exiting')
+        print('restarting')
         exit()
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
@@ -835,11 +839,21 @@ async def restart(ctx: SlashContext):
              guild_ids=[config.guild])
 async def off(ctx: SlashContext):
     if ctx.author == ctx.guild.owner:
+        write_log('exiting')
         await ctx.reply('Выключаюсь')
         print('exiting')
         exit()
     else:
         await send_for_three_seconds(ctx, config.owner_perm_error)
+
+
+def write_log(text: str):
+    logging.info(text)
+
+
+logging.basicConfig(filename=config.log_filename,
+                    format='[%(asctime)s] %(levelname)s:  %(message)s',
+                    datefmt='%d %b %Y %H:%M:%S')
 
 
 client.run(config.token)
