@@ -360,7 +360,11 @@ async def hentai(ctx: SlashContext, num: int = 1, tags: str = ''):
     if ctx.channel.id in [config.nsfw_channel, config.test_channel, config.beta_test_channel]:
         if num < 31:
             if num > 0:
-                r = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit={num}&tags={tags}&pid={random.randint(0,6650)}')
+                e = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags={tags}')
+                root = ET.fromstring(e.text)
+                count = int(root.get('count'))
+
+                r = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit={num}&tags={tags}&pid={random.randint(0,(count//num)-1)}')
                 root = ET.fromstring(r.text)
                 for post in root.findall('post'):
                     await ctx.send(post.get('file_url'))
@@ -370,22 +374,6 @@ async def hentai(ctx: SlashContext, num: int = 1, tags: str = ''):
             await send_for_three_seconds(ctx, 'Максимальное количество - 30')
     else:
         await send_for_three_seconds(ctx, config.channel_error)
-
-
-@slash.slash(name='hentai_categories',
-             description='Отправляет категории хентая.',
-             guild_ids=[config.guild])
-async def hentai_categories(ctx: SlashContext):
-    filenames = next(os.walk('C:\\Program Files\\Python38\\Lib\\site-packages\\hmtai\\hmtai_libv' + config.hentai_lib),
-                     (None, None, []))[2]
-    text = ''
-    for filename in filenames:
-        text = text + filename.split('.')[0] + '\n'
-
-    embed = discord.Embed(title='Категории хентая',
-                          description=text,
-                          color=config.embed_color)
-    await ctx.send(embed=embed)
 
 
 #
