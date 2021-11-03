@@ -835,6 +835,8 @@ async def inventory(ctx: SlashContext):
             text = text + f'{potion["name"]} ({potion["count"]})'
         else:
             text = 'У вас нет зелий'
+        print(text)
+    print(text)
     embed.add_field(name=f'```Зелья:```',
                     value=text, inline=False)
 

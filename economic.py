@@ -138,4 +138,10 @@ class Economic:
                                           'work_timeout': 0,
                                           'health': 20,
                                           'dungeon_timeout': 0}
+        from rpg import RPG
+        for id, potion in RPG.potions.items():
+            eco['members'][str(member.id)]['inventory']['potions'][str(id)] = {'strength': 0,
+                                                                               'name': '',
+                                                                               'count': 0}
+
         set_economic(eco)
