@@ -12,8 +12,8 @@ lotteries = {}
 
 async def send_for_three_seconds(ctx: SlashContext, text: str):
     msg = await ctx.reply(text)
-    await asyncio.sleep(3)
-    await msg.delete()
+    #await asyncio.sleep(3)
+    #await msg.delete()
 
 
 class Lottery:

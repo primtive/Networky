@@ -7,10 +7,11 @@ import json
 import datetime
 import config
 import random
-from rpg import RPG
+from rpg import RPG, Dungeon, active_dungeons
 import economic
 from lottery import Lottery, lotteries
 import xml.etree.ElementTree as ET
+from roman import toRoman
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic, write_log
 from admin_commands import mute, unmute
 from discord.ext import commands
@@ -108,11 +109,25 @@ async def on_component(ctx: ComponentContext):  # buttons handler
         if ctx.component.get('label') in labels:
             await lottery.take_part(ctx)
 
+    if ctx.origin_message.channel in active_dungeons.keys():
+        if ctx.component['label'] == 'Старт!':
+            await active_dungeons[ctx.origin_message.channel].start_dungeon()
+        if ctx.component['label'] == 'Отмена':
+            await active_dungeons[ctx.origin_message.channel].cancel_dungeon()
+        if ctx.component['label'] == 'Покинуть данж':
+            await active_dungeons[ctx.origin_message.channel].exit_dungeon()
+        if ctx.component['label'] == 'Следующий ход':
+            await active_dungeons[ctx.origin_message.channel].step()
+        for id, potion in active_dungeons[ctx.origin_message.channel].potions.items():
+            if potion["count"] > 0:
+                if ctx.component['label'] == f'{potion["name"]} ({potion["count"]})':
+                    await active_dungeons[ctx.origin_message.channel].apply_potion(id)
+
 
 async def send_for_three_seconds(ctx: SlashContext, text: str):
     msg = await ctx.reply(text)
-    await asyncio.sleep(3)
-    await msg.delete()
+    #await asyncio.sleep(3)
+    #await msg.delete()
 
 
 async def time_checker():
@@ -531,7 +546,10 @@ async def pay(ctx: SlashContext, member: discord.Member, money: float):
             if economic.get_money(ctx.author) >= money:
                 economic.give_money(member, money)
                 economic.take_money(ctx.author, money)
-                await ctx.reply(ctx.author.display_name + ' передал ' + member.display_name + ' ' + str(money) + ' $')
+                if money == 300:
+                    await ctx.reply(ctx.author.display_name + ' передал ' + member.display_name + ' three hundred bucks')
+                else:
+                    await ctx.reply(ctx.author.display_name + ' передал ' + member.display_name + ' ' + str(money) + ' $')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
         else:
@@ -639,7 +657,7 @@ async def buy_role(ctx: SlashContext, id: int):
             if economic.get_money(ctx.author) >= economics.roles_shop[id]['price']:
                 economic.take_money(ctx.author, float(id))
                 await ctx.author.add_roles(role)
-                await ctx.reply('Поздравляем с покупкой роли ' + role.name + '!')
+                await ctx.reply('Поздравляем с покупкой роли **' + role.name + '**!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
         else:
@@ -761,7 +779,7 @@ async def buy_weapon(ctx: SlashContext, id: int):
                 eco['members'][str(ctx.author.id)]['inventory']['weapon'] = id
                 set_economic(eco)
                 economic.take_money(ctx.author, RPG.weapons[id]['price'])
-                await ctx.reply('Поздравляем с покупкой ' + RPG.weapons[id]['name'] + '!')
+                await ctx.reply('Поздравляем с покупкой **' + RPG.weapons[id]['name'] + '**!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
         else:
@@ -785,7 +803,7 @@ async def buy_armor(ctx: SlashContext, id: int):
                 eco['members'][str(ctx.author.id)]['inventory']['armor'] = id
                 set_economic(eco)
                 economic.take_money(ctx.author, RPG.armors[id]['price'])
-                await ctx.reply('Поздравляем с покупкой ' + RPG.armors[id]['name'] + '!')
+                await ctx.reply('Поздравляем с покупкой **' + RPG.armors[id]['name'] + '**!')
             else:
                 await send_for_three_seconds(ctx, config.not_enough_money_error)
         else:
@@ -803,23 +821,116 @@ async def inventory(ctx: SlashContext):
     weapon = RPG.weapons[inventory_dict['weapon']]
     armor = RPG.armors[inventory_dict['armor']]
 
+    embed = discord.Embed(title='Инвентарь ' + ctx.author.display_name + ':',
+                          description='',
+                          color=config.embed_color)
+
+    embed.add_field(name=f'```Оружие:```',
+                    value=weapon['name'] + ' (' + str(weapon['damage']) + ' урона)', inline=False)
+    embed.add_field(name=f'```Броня:```',
+                    value=armor['name'] + ' (' + str(armor['defence']) + ' защиты)', inline=False)
     text = ''
-    text = text + 'Оружие:\n'
-    text = text + weapon['name'] + ' (' + str(weapon['damage']) + ' урона)\n\n'
-    text = text + 'Броня:\n'
-    text = text + armor['name'] + ' (' + str(armor['defence']) + ' защиты)\n\n'
-    text = text + 'Предметы:\n'
-    if len(inventory_dict['items']) > 0:
-        for item in inventory_dict['items']:
+    for potion_id, potion in inventory_dict['potions'].items():
+        if potion['count'] > 0:
+            text = text + f'{potion["name"]} ({potion["count"]})'
+        else:
+            text = 'У вас нет зелий'
+    embed.add_field(name=f'```Зелья:```',
+                    value=text, inline=False)
+
+    text = ''
+    if len(inventory_dict['artifacts']) > 0:
+        for item in inventory_dict['artifacts']:
             text = text + item['name'] + '\n'
     else:
-        text = text + 'У вас нет предметов'
+        text = 'У вас нет артефактов'
+    embed.add_field(name=f'```Артефакты:```',
+                    value=text, inline=False)
 
-    embed = discord.Embed(title='Инвентарь ' + ctx.author.display_name + ':',
+    await ctx.reply(embed=embed)
+
+
+@slash.slash(name='hp',
+             description='Отображает ваше здоровье',
+             guild_ids=[config.guild])
+async def hp(ctx: SlashContext):
+    eco = get_economic()
+
+    health = eco['members'][str(ctx.author.id)]['health']
+
+    await send_for_three_seconds(ctx, f'Ваше hp состовляет: {health}')
+
+
+@slash.slash(name='buy_potion',
+             description='Позволяет купить зелье',
+             guild_ids=[config.guild])
+async def buy_potion(ctx: SlashContext, id: int):
+    eco = get_economic()
+    strength = id % 10
+    potion_id = id // 10
+
+    if potion_id in RPG.potions.keys():
+        effect = (strength ** 2) * 5
+        price = effect * 10 * RPG.potions[potion_id]['price_multiplier']
+        name = RPG.potions[potion_id]['name'].format(toRoman(strength))
+
+        if economic.get_money(ctx.author) >= price:
+            try:
+                count = eco['members'][str(ctx.author.id)]['inventory']['potions'][potion_id]['count']
+            except:
+                count = 1
+            eco['members'][str(ctx.author.id)]['inventory']['potions'][potion_id] = {'strength': strength,
+                                                                                     'name': name,
+                                                                                     'count': count}
+            set_economic(eco)
+            economic.take_money(ctx.author, price)
+            await ctx.reply(f'Поздравляем с покупкой **{name}**!')
+        else:
+            await send_for_three_seconds(ctx, config.not_enough_money_error)
+    else:
+        await send_for_three_seconds(ctx, config.id_error)
+
+
+@slash.slash(name='dungeons',
+             description='Отображает список данжей',
+             guild_ids=[config.guild])
+async def dungeons(ctx: SlashContext):
+    text = 'Для похода в данж введите: \n' \
+           '/dungeon (Номер данжа)\n'
+
+    embed = discord.Embed(title='Список данжей:',
                           description=text,
                           color=config.embed_color)
 
+    text = ''
+
+    for id, dungeon in RPG.dungeons.items():
+        text = text + 'Враги:  \n'
+        for mob in dungeon['mobs']:
+            text = text + f'_ _ {mob["name"].replace("{m}", "").replace("{f}", "")} ({mob["health"]} hp, {mob["damage"]} атаки) \n'
+        embed.add_field(name=f'```{id}. {dungeon["name"]}```',
+                        value=text, inline=False)
+        text = ''
+
     await ctx.reply(embed=embed)
+
+
+@slash.slash(name='dungeon',
+             description='Позволяет пойти в данж',
+             guild_ids=[config.guild])
+async def dungeon(ctx: SlashContext, id: int):
+    eco = get_economic()
+
+    if eco['members'][str(ctx.author.id)]['dungeon_timeout'] < time.time():
+        if id in RPG.dungeons.keys():
+            dungeon = Dungeon(ctx, dungeon_id=id)
+            await dungeon.create_dungeon()
+        else:
+            await send_for_three_seconds(ctx, config.id_error)
+    else:
+        await send_for_three_seconds(ctx, 'Вы слишком устали, чтобы идти в данж.\n'
+                                          'Вы сможете пойти в данж только через **' + str(datetime.timedelta(seconds=round(eco['members'][str(ctx.author.id)]['dungeon_timeout'] - time.time()))) + '**')
+
 
 
 #

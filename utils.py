@@ -25,5 +25,6 @@ def set_economic(eco: dict):
 
 def write_log(text: str):
     f = open(config.log_filename, 'a')
+    print(f'[{time.strftime("%d %b %Y %H:%M:%S")}] {text}\n')
     f.write(f'[{time.strftime("%d %b %Y %H:%M:%S")}] {text}\n')
     f.close()

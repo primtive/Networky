@@ -108,10 +108,18 @@ class Economic:
 
     def reset_economic(self, ctx: SlashContext):
 
-        eco = {'settings': {'last_update_day': 0,
-                            'last_update_random_coins': 0},
-               'members': {}}
+        try:
+            eco = get_economic()
+        except:
+            eco = {}
 
+        eco['members'] = {}
+
+        try:
+            _ = eco['settings']
+        except:
+            eco['settings'] = {'last_update_day': 0,
+                               'last_update_random_coins': 0}
         set_economic(eco)
 
         for member in ctx.guild.members:
@@ -120,12 +128,14 @@ class Economic:
 
     def add_member(self, member: discord.Member):
         eco = get_economic()
-        if not eco['members'][str(member.id)]:
-            eco['members'][str(member.id)] = {'money': 0.0,
-                                              'inventory': {'weapon': 0,
-                                                            'armor': 0,
-                                                            'items': []},
-                                              'daily': True,
-                                              'work': 0,
-                                              'work_timeout': 0}
+        eco['members'][str(member.id)] = {'money': 0.0,
+                                          'inventory': {'weapon': 0,
+                                                        'armor': 0,
+                                                        'potions': {},
+                                                        'artifacts': []},
+                                          'daily': True,
+                                          'work': 0,
+                                          'work_timeout': 0,
+                                          'health': 20,
+                                          'dungeon_timeout': 0}
         set_economic(eco)
