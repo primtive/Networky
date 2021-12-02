@@ -11,12 +11,12 @@ from rpg import RPG, Dungeon, active_dungeons
 import economic
 from lottery import Lottery, lotteries
 import xml.etree.ElementTree as ET
-from roman import toRoman
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic, write_log
 from admin_commands import mute, unmute
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext, ComponentContext, manage_components, ButtonStyle
 from voting import votings, Voting
+from roman import toRoman
 
 print('starting')
 write_log('starting')
@@ -126,8 +126,8 @@ async def on_component(ctx: ComponentContext):  # buttons handler
 
 async def send_for_three_seconds(ctx: SlashContext, text: str):
     msg = await ctx.reply(text)
-    #await asyncio.sleep(3)
-    #await msg.delete()
+    # await asyncio.sleep(3)
+    # await msg.delete()
 
 
 async def time_checker():
@@ -153,7 +153,7 @@ async def time_checker():
             actions = [manage_components.create_button(label='Подобрать!', style=ButtonStyle.green)]
             action_rows = manage_components.create_actionrow(*actions)
 
-            coins = random.randint(100, 200)
+            coins = random.randint(100, 160)
 
             channel = client.get_guild(config.guild).get_channel(config.main_channel)
 
@@ -179,39 +179,57 @@ async def ping(ctx: SlashContext):
     await ctx.send('Pong! {0}'.format(round(client.latency, 1)) + ' ms')
 
 
+@slash.slash(name='say',
+             description='Пишет сообщение от лица бота',
+             guild_ids=[config.guild])
+async def say(ctx: SlashContext, text: str):
+    if ctx.author != ctx.guild.owner:
+        await send_for_three_seconds(ctx, config.upper_role_error)
+        return None
+    await ctx.send(text)
+    msg = await ctx.reply('Отправил')
+    await msg.delete()
+
+
+@slash.slash(name='say_dm',
+             description='Пишет сообщение от лица бота в лс',
+             guild_ids=[config.guild])
+async def say_dm(ctx: SlashContext, member: discord.Member, text: str):
+    if member.bot:
+        await send_for_three_seconds(ctx, config.bot_error)
+        return None
+    if ctx.author != ctx.guild.owner:
+        await send_for_three_seconds(ctx, config.upper_role_error)
+        return None
+    await member.send(text)
+    msg = await ctx.reply('Отправил')
+    await msg.delete()
+
+
 #
 
 
 @slash.slash(name='mute',
              description='Заглушает участника',
              guild_ids=[config.guild])
-async def mute_command(ctx: SlashContext, member: discord.Member, minutes: int = None):
+async def mute_command(ctx: SlashContext, member: discord.Member, time: str = None):
     min_role = await get_role_by_id(ctx, config.mute_perm_role)
 
-    if not member.bot:
-        if ctx.author != member:
-            if ctx.author.top_role > member.top_role:
-                if ctx.author.top_role >= await get_role_by_id(ctx, config.mute_perm_role):
-                    if minutes:
-                        if minutes > 0:
-                            if minutes != 0:
-
-                                await mute(ctx, member, ctx.author, minutes)
-
-                            else:
-                                await send_for_three_seconds(ctx, config.zero_time_error)
-                        else:
-                            await send_for_three_seconds(ctx, config.lower_zero_time_error)
-                    else:
-                        await mute(ctx=ctx, member=member, muter=ctx.author)
-                else:
-                    await send_for_three_seconds(ctx, config.role_perm_error.format(min_role.name))
-            else:
-                await send_for_three_seconds(ctx, config.upper_role_error)
-        else:
-            await send_for_three_seconds(ctx, config.self_error)
-    else:
+    if member.bot:
         await send_for_three_seconds(ctx, config.bot_error)
+        return None
+    if ctx.author == member:
+        await send_for_three_seconds(ctx, config.self_error)
+        return None
+    if ctx.author.top_role < member.top_role:
+        await send_for_three_seconds(ctx, config.upper_role_error)
+        return None
+    if ctx.author.top_role < await get_role_by_id(ctx, config.mute_perm_role):
+        await send_for_three_seconds(ctx, config.role_perm_error.format(min_role.name))
+        return None
+    
+    await mute(ctx, member, ctx.author, time)
+
 
 
 @slash.slash(name='unmute',
@@ -379,7 +397,8 @@ async def hentai(ctx: SlashContext, num: int = 1, tags: str = ''):
                 root = ET.fromstring(e.text)
                 count = int(root.get('count'))
 
-                r = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit={num}&tags={tags}&pid={random.randint(0,(count//num)-1)}')
+                r = requests.get(f'https://rule34.xxx/index.php?page=dapi&s=post&q=index&'
+                                 f'limit={num}&tags={tags}&pid={random.randint(0,(count//num)-1)}')
                 root = ET.fromstring(r.text)
                 for post in root.findall('post'):
                     await ctx.send(post.get('file_url'))
@@ -618,9 +637,23 @@ async def daily(ctx: SlashContext):
     if eco['members'][str(ctx.author.id)]['daily']:
         eco['members'][str(ctx.author.id)]['daily'] = False
         economic.give_money(ctx.author, float(config.daily_coins))
-        eco['members'][str(ctx.author.id)]['money'] = eco['members'][str(ctx.author.id)]['money'] + float(config.daily_coins)
+        
+        coin_multiplier = 0
+        
+        role_ids = []
+        
+        for role in ctx.author.roles:
+            role_ids.append(role.id)
+        
+        for id, role in economics.roles_shop.items():
+            if role['id'] in role_ids:
+                coin_multiplier = economics.roles_shop[id]['coin_multiplier']
+            
+        coins = float(config.daily_coins * coin_multiplier)
+
+        eco['members'][str(ctx.author.id)]['money'] = eco['members'][str(ctx.author.id)]['money'] + coins
         set_economic(eco)
-        await send_for_three_seconds(ctx, config.daily_success)
+        await send_for_three_seconds(ctx, config.daily_success.format(coins))
     else:
         await send_for_three_seconds(ctx, config.daily_error)
 
@@ -832,14 +865,11 @@ async def inventory(ctx: SlashContext):
     text = ''
     for potion_id, potion in inventory_dict['potions'].items():
         if potion['count'] > 0:
-            text = text + f'{potion["name"]} ({potion["count"]})'
-        else:
-            text = 'У вас нет зелий'
-        print(text)
-    print(text)
+            text += f'{potion["name"]} ({potion["count"]})\n'
+    if text == '':
+        text = 'У вас нет зелий'
     embed.add_field(name=f'```Зелья:```',
                     value=text, inline=False)
-
     text = ''
     if len(inventory_dict['artifacts']) > 0:
         for item in inventory_dict['artifacts']:
@@ -877,13 +907,12 @@ async def buy_potion(ctx: SlashContext, id: int):
         name = RPG.potions[potion_id]['name'].format(toRoman(strength))
 
         if economic.get_money(ctx.author) >= price:
-            try:
-                count = eco['members'][str(ctx.author.id)]['inventory']['potions'][potion_id]['count']
-            except:
-                count = 1
-            eco['members'][str(ctx.author.id)]['inventory']['potions'][potion_id] = {'strength': strength,
-                                                                                     'name': name,
-                                                                                     'count': count}
+            count = eco['members'][str(ctx.author.id)]['inventory']['potions'][str(potion_id)]['count'] + 1
+            
+            eco['members'][str(ctx.author.id)]['inventory']['potions'].pop(str(potion_id))
+            eco['members'][str(ctx.author.id)]['inventory']['potions'][str(potion_id)] = {'strength': strength,
+                                                                                          'name': name,
+                                                                                          'count': count}
             set_economic(eco)
             economic.take_money(ctx.author, price)
             await ctx.reply(f'Поздравляем с покупкой **{name}**!')
@@ -925,6 +954,10 @@ async def dungeon(ctx: SlashContext, id: int):
 
     if eco['members'][str(ctx.author.id)]['dungeon_timeout'] < time.time():
         if id in RPG.dungeons.keys():
+            for active_dungeon in active_dungeons.values():
+                if active_dungeon.member == ctx.author:
+                    await ctx.reply('Ты аферист?')
+                    return None
             dungeon = Dungeon(ctx, dungeon_id=id)
             await dungeon.create_dungeon()
         else:

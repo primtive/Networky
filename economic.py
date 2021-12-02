@@ -37,16 +37,20 @@ class Economic:
     roles_shop = {
         1:
             {"id": config.vip_role,
-             "price": 1000},
+             "price": 10000,
+             "coin_multiplier": 1.25},
         2:
             {"id": config.deluxe_role,
-             "price": 2500},
+             "price": 25000,
+             "coin_multiplier": 1.5},
         3:
             {"id": config.emperor_role,
-             "price": 5000},
+             "price": 50000,
+             "coin_multiplier": 1.75},
         4:
             {"id": config.helper_role,
-             "price": 10000}
+             "price": 100000,
+             "coin_multiplier": 2}
     }
 
     works = {
@@ -59,50 +63,50 @@ class Economic:
         1: {
             'name': 'Дворник',
             'salary': 50,
-            'timeout': 120,
+            'timeout': 60,
             'price': 0
         },
         2: {
             'name': 'Продавец-кассир',
             'salary': 100,
-            'timeout': 180,
-            'price': 1000
+            'timeout': 120,
+            'price': 500
         },
         3: {
             'name': 'Консультант DNS',
             'salary': 200,
-            'timeout': 240,
-            'price': 5000
+            'timeout': 120,
+            'price': 2000
         },
         4: {
             'name': 'Менеджер',
             'salary': 400,
-            'timeout': 360,
-            'price': 20000
+            'timeout': 120,
+            'price': 30000
         },
         5: {
             'name': 'Хирург',
             'salary': 600,
-            'timeout': 720,
-            'price': 20000
+            'timeout': 180,
+            'price': 55000
         },
         6: {
             'name': 'Программист',
             'salary': 1000,
-            'timeout': 360,
-            'price': 100000
+            'timeout': 120,
+            'price': 77000
         },
         7: {
             'name': 'Хакер',
             'salary': 5000,
-            'timeout': 720,
-            'price': 500000
+            'timeout': 180,
+            'price': 250000
         },
         8: {
             'name': 'Гендиректор Google',
             'salary': 10000,
-            'timeout': 60,
-            'price': 2500000
+            'timeout': 180,
+            'price': 700000
         },
     }
 

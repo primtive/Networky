@@ -4,14 +4,34 @@ import config
 import discord
 from discord_slash import manage_components, SlashContext, ButtonStyle
 from roman import toRoman
-from economic import get_economic, give_money, set_economic
+from economic import get_economic, give_money, set_economic, Economic
 import random
 
 active_dungeons = {}
 
+
 class RPG:
-    male_names = 'Григорий, Лев, Андрей, Роман, Арсений, Степан, Владислав, Никита, Глеб, Марк, Давид, Ярослав, Евгений, Матвей, Фёдор, Николай, Алексей, Андрей, Артемий, Виктор, Никита, Даниил, Денис, Егор, Игорь, Лев, Леонид, Павел, Петр, Роман, Руслан, Сергей, Семён, Тимофей, Степан, Владимир, Тимофей, Ярослав, Павел, Егор, Сергей, Владислав, Федор, Константин, Максим, Артём, Никита, Юрий, Платон, Денис, Ярослав, Мирон, Василий, Лев, Степан, Евгений, Савелий, Давид, Григорий, Тимур, Кирилл, Виктор, Фёдор, Богдан, Константин, Адам, Леонид, Роман, Павел, Артемий, Петр, Алексей, Мирон, Владимир, Николай, Руслан, Алексей, Юрий, Ярослав, Семен, Евгений, Олег, Артур, Петр, Степан, Илья, Вячеслав, Сергей, Василий, Степа, Федор, Стас, Вячеслав, Георгий, Антон, Борис, Захар, Арсений, Виктор, Родион, Святослав, Игорь, Гордей, Юрий, Мирослав, Лука, Егор, Игорь, Глеб, Коля, Давид, Леон, Женя, Вася, Мирон, Савелий, Олег, Даниэль, Савва, Денис, Святослав, Рома, Кирилл, Николай, Артём, Костя, Владимир, Степа, Вячеслав, Денис, Паша, Виктор, Михаил, Андрей, Вадим, Анатолий, Илья, Степа, Федор, Георг, Семен, Олег, Лев, Демьян, Антон, Владислав, Артем, Елисей, Радик, Боря, Стас, Марк, Влад, Ян, Паша, Витя, Леонид, Вася, Игнат, Юра, Петр, Анатолий, Валера, Эрик, Марат, Мирон, Витя, Анатолий, Роман, Ника, Платон, Сережа, Тимур, Женя, Семен, Анатолий, Олег, Адам, Игорь, Филя, Артур, Марсель, Валера, Ян, Назар, Леон'.split(', ')
-    female_names = 'Александра, Алёна, Алина, Алиса, Алла, Анастасия, Анна, Арина, Валентина, Валерия, Варвара, Вера, Вероника, Виктория, Виталия, Владислава, Галина, Дарья, Диана, Ева, Ева, Евгения, Екатерина, Алёна, Елена, Елизавета, Жанна, Инна, Ирина, Карина, Кристина, Ксения, Лариса, Лера, Лилия, Любовь, Людмила, Маргарита, Марина, Мария, Мила, Милана, Надежда, Наталья, Ника, Нина, Оксана, Олеся, Ольга, Полина, Роза, Руслана, Светлана, Соня, София, Софья, Татьяна, Юлия, Яна, Ярослава'.split(', ')
+    male_names = 'Григорий, Лев, Андрей, Роман, Арсений, Степан, Владислав, Никита, Глеб, Марк, Давид, Ярослав, ' \
+                 'Евгений, Матвей, Фёдор, Николай, Алексей, Андрей, Артемий, Виктор, Никита, Даниил, Денис, Егор, ' \
+                 'Игорь, Лев, Леонид, Павел, Петр, Роман, Руслан, Сергей, Семён, Тимофей, Степан, Владимир, Тимофей, ' \
+                 'Ярослав, Павел, Егор, Сергей, Владислав, Федор, Константин, Максим, Артём, Никита, Юрий, Платон, ' \
+                 'Денис, Ярослав, Мирон, Василий, Лев, Степан, Евгений, Савелий, Давид, Григорий, Тимур, Кирилл, ' \
+                 'Виктор, Фёдор, Богдан, Константин, Адам, Леонид, Роман, Павел, Артемий, Петр, Алексей, Мирон, ' \
+                 'Владимир, Николай, Руслан, Алексей, Юрий, Ярослав, Семен, Евгений, Олег, Артур, Петр, Степан, Илья, ' \
+                 'Вячеслав, Сергей, Василий, Степа, Федор, Стас, Вячеслав, Георгий, Антон, Борис, Захар, Арсений, ' \
+                 'Виктор, Родион, Святослав, Игорь, Гордей, Юрий, Мирослав, Лука, Егор, Игорь, Глеб, Коля, Давид, ' \
+                 'Леон, Женя, Вася, Мирон, Савелий, Олег, Даниэль, Савва, Денис, Святослав, Рома, Кирилл, Николай, ' \
+                 'Артём, Костя, Владимир, Степа, Вячеслав, Денис, Паша, Виктор, Михаил, Андрей, Вадим, Анатолий, ' \
+                 'Илья, Степа, Федор, Георг, Семен, Олег, Лев, Демьян, Антон, Владислав, Артем, Елисей, Радик, Боря, ' \
+                 'Стас, Марк, Влад, Ян, Паша, Витя, Леонид, Вася, Игнат, Юра, Петр, Анатолий, Валера, Эрик, Марат, ' \
+                 'Мирон, Витя, Анатолий, Роман, Ника, Платон, Сережа, Тимур, Женя, Семен, Анатолий, Олег, Адам, ' \
+                 'Игорь, Филя, Артур, Марсель, Валера, Ян, Назар, Леон'.split(', ')
+    female_names = 'Александра, Алёна, Алина, Алиса, Алла, Анастасия, Анна, Арина, Валентина, Валерия, Варвара, Вера, ' \
+                   'Вероника, Виктория, Виталия, Владислава, Галина, Дарья, Диана, Ева, Ева, Евгения, Екатерина, ' \
+                   'Алёна, Елена, Елизавета, Жанна, Инна, Ирина, Карина, Кристина, Ксения, Лариса, Лера, Лилия, ' \
+                   'Любовь, Людмила, Маргарита, Марина, Мария, Мила, Милана, Надежда, Наталья, Ника, Нина, Оксана, ' \
+                   'Олеся, Ольга, Полина, Роза, Руслана, Светлана, Соня, София, Софья, Татьяна, Юлия, Яна, ' \
+                   'Ярослава'.split(', ')
 
     dungeons = {
         1: {'name': 'Мусорка',
@@ -106,7 +126,7 @@ class RPG:
                 {
                     'name': 'Покупатель {m}',
                     'damage': 100,
-                    'health': 1000
+                    'health': 874
                 }
             ]
             },
@@ -115,46 +135,46 @@ class RPG:
                 {
                     'name': 'Демон',
                     'damage': 102,
-                    'health': 2242
+                    'health': 1212
                 },
                 {
                     'name': 'Демон',
                     'damage': 110,
-                    'health': 2358
+                    'health': 1324
                 },
                 {
                     'name': 'Дъявол',
-                    'damage': 300,
-                    'health': 5000
+                    'damage': 170,
+                    'health': 3256
                 },
                 {
                     'name': 'Сатана',
-                    'damage': 1000,
-                    'health': 10000
+                    'damage': 240,
+                    'health': 5342
                 }
             ]
             },
         6: {'name': 'Рай',
             'mobs': [
                 {
-                    'name': 'Монарх',
+                    'name': 'Монарх {m}',
                     'damage': 220,
-                    'health': 3500
+                    'health': 2543
                 },
                 {
-                    'name': 'Ангел',
-                    'damage': 440,
-                    'health': 4000
+                    'name': 'Ангел {f}',
+                    'damage': 100,
+                    'health': 4914
                 },
                 {
-                    'name': 'Преспешник Бога',
-                    'damage': 800,
-                    'health': 8000
+                    'name': 'Преспешник Бога {m}',
+                    'damage': 290,
+                    'health': 3543
                 },
                 {
-                    'name': 'Бог',
-                    'damage': 1600,
-                    'health': 18000
+                    'name': 'Бог {m}',
+                    'damage': 420,
+                    'health': 7643
                 }
             ]
             },
@@ -162,71 +182,71 @@ class RPG:
             'mobs': [
                 {
                     'name': 'Заквиель',
-                    'damage': 440,
-                    'health': 9000
+                    'damage': 310,
+                    'health': 3456
                 },
                 {
                     'name': 'Ники',
-                    'damage': 130,
-                    'health': 23000
+                    'damage': 180,
+                    'health': 6324
                 },
                 {
                     'name': 'НеО',
-                    'damage': 1600,
-                    'health': 15000
+                    'damage': 540,
+                    'health': 5432
                 },
                 {
                     'name': 'Альцест',
-                    'damage': 3000,
-                    'health': 36000
+                    'damage': 850,
+                    'health': 9432
                 }
             ]
             },
         8: {'name': 'Г.Абобусово',
             'mobs': [
                 {
-                    'name': 'Абобус',
-                    'damage': 600,
-                    'health': 12000
+                    'name': 'Абобус {m}',
+                    'damage': 450,
+                    'health': 4536
                 },
                 {
-                    'name': 'Абобус',
-                    'damage': 600,
-                    'health': 12000
+                    'name': 'Абобус {m}',
+                    'damage': 470,
+                    'health': 5673
                 },
                 {
-                    'name': 'Абубуска',
-                    'damage': 300,
-                    'health': 30000
+                    'name': 'Абубуска {f}',
+                    'damage': 270,
+                    'health': 9235
                 },
                 {
                     'name': 'Карейка Даша',
-                    'damage': 6000,
-                    'health': 60000
+                    'damage': 1010,
+                    'health': 13524
                 }
             ]
             },
         9: {'name': 'Gym',
             'mobs': [
                 {
-                    'name': 'Fucking slave',
-                    'damage': 900,
-                    'health': 15000
+                    'name': 'Fucking slave {m}',
+                    'damage': 560,
+                    'health': 6463
                 },
                 {
                     'name': 'Jebrony',
-                    'damage': 1500,
-                    'health': 30000
+                    'damage': 610,
+                    'health': 8234
                 },
                 {
-                    'name': 'Full master',
-                    'damage': 6000,
-                    'health': 60000
+                    'name': 'Full master {m}',
+                    'damage': 720,
+                    'health': 12534
                 },
                 {
-                    'name': 'Dungeon Master',
-                    'damage': 12000,
-                    'health': 120000
+                    'name': 'Dungeon Master {m}',
+                    'damage': 1337,
+                    'health': 18563
                 }
             ]
             },
@@ -234,23 +254,23 @@ class RPG:
              'mobs': [
                  {
                      'name': 'Лололошка',
-                     'damage': 1500,
-                     'health': 30000
+                     'damage': 670,
+                     'health': 9573
                  },
                  {
                      'name': 'Суба',
-                     'damage': 2000,
-                     'health': 40000
+                     'damage': 710,
+                     'health': 13642
                  },
                  {
                      'name': 'Гардей',
-                     'damage': 8000,
-                     'health': 70000
+                     'damage': 830,
+                     'health': 15632
                  },
                  {
                      'name': 'Летвин',
-                     'damage': 20000,
-                     'health': 360000
+                     'damage': 1850,
+                     'health': 25532
                  }
              ]
              },
@@ -258,23 +278,23 @@ class RPG:
              'mobs': [
                  {
                      'name': 'Малолетка с петардой',
-                     'damage': 3000,
-                     'health': 60000
+                     'damage': 890,
+                     'health': 15675
                  },
                  {
                      'name': 'Малолетка играющая в бравл',
-                     'damage': 4000,
-                     'health': 46000
+                     'damage': 980,
+                     'health': 18564
                  },
                  {
-                     'name': 'Убрщица',
-                     'damage': 16000,
-                     'health': 140000
+                     'name': 'Уборщица {f}',
+                     'damage': 1230,
+                     'health': 21562
                  },
                  {
-                     'name': 'Стареклассник с hqd',
-                     'damage': 40000,
-                     'health': 720000
+                     'name': 'Старшеклассник с hqd',
+                     'damage': 2130,
+                     'health': 34246
                  }
              ]
         }
@@ -282,80 +302,80 @@ class RPG:
 
     weapons = {
         0: {'name': 'Кулаки',
-            'damage': 3,
+            'damage': 10,
             'price': 0},
         1: {'name': 'Деревянный меч',
-            'damage': 10,
-            'price': 1000},
+            'damage': 20,
+            'price': 300},
         2: {'name': 'Каменный меч',
-            'damage': 15,
-            'price': 2500},
-        3: {'name': 'Железный меч',
-            'damage': 25,
-            'price': 10000},
-        4: {'name': 'Золотой меч',
             'damage': 30,
-            'price': 25000},
+            'price': 1000},
+        3: {'name': 'Железный меч',
+            'damage': 40,
+            'price': 1500},
+        4: {'name': 'Золотой меч',
+            'damage': 70,
+            'price': 3000},
         5: {'name': 'Алмазный меч',
-            'damage': 50,
-            'price': 100000},
+            'damage': 120,
+            'price': 6000},
         6: {'name': 'Адамантитовый меч',
-            'damage': 75,
-            'price': 200000},
+            'damage': 200,
+            'price': 10000},
         7: {'name': 'Меч Бога',
-            'damage': 150,
-            'price': 1000000},
+            'damage': 290,
+            'price': 20000},
         8: {'name': 'Меч Абобуса',
             'damage': 500,
-            'price': 1200000},
+            'price': 30000},
         9: {'name': 'Bandage',
-            'damage': 2000,
-            'price': 1900000},
+            'damage': 670,
+            'price': 60000},
         10: {'name': 'Заточка Субы',
-             'damage': 5000,
-             'price': 2200000},
+             'damage': 780,
+             'price': 100000},
         11: {'name': 'Швабра Уборщицы',
-            'damage': 10000,
-            'price': 3000000}
+            'damage': 920,
+            'price': 300000}
     }
 
     armors = {
     0: {'name': 'Рубашка',
-        'defence': 1,
+        'defence': 10,
         'price': 0},
     1: {'name': 'Деревянная броня',
-        'defence': 10,
-        'price': 1000},
+        'defence': 20,
+        'price': 300},
     2: {'name': 'Кожанная броня',
-        'defence': 15,
-        'price': 2500},
-    3: {'name': 'Железная броня',
-        'defence': 25,
-        'price': 10000},
-    4: {'name': 'Золотая броня',
         'defence': 30,
-        'price': 25000},
+        'price': 1000},
+    3: {'name': 'Железная броня',
+        'defence': 40,
+        'price': 1500},
+    4: {'name': 'Золотая броня',
+        'defence': 70,
+        'price': 3000},
     5: {'name': 'Алмазная броня',
-        'defence': 50,
-        'price': 100000},
+        'defence': 120,
+        'price': 6000},
     6: {'name': 'Адаманититовая броня',
-        'defence': 75,
-        'price': 200000},
+        'defence': 200,
+        'price': 10000},
     7: {'name': 'Броня Бога',
-        'defence': 150,
-        'price': 1000000},
+        'defence': 290,
+        'price': 20000},
     8: {'name': 'Броня Абобуса',
         'defence': 500,
-        'price': 1200000},
+        'price': 30000},
     9: {'name': 'Майка Jebrony',
-        'defence': 1500,
-        'price': 1900000},
+        'defence': 670,
+        'price': 60000},
     10: {'name': 'Рубашка Gucci',
-         'defence': 5000,
-         'price': 2200000},
+         'defence': 780,
+         'price': 100000},
     11: {'name': 'Накидка Уборщицы',
-         'defence': 10000,
-         'price': 3000000}
+         'defence': 920,
+         'price': 300000}
     }
 
     potions = {
@@ -395,7 +415,7 @@ class RPG:
             'buy_command': 'buy_potion'
         },
         4: {
-            'name': 'Артефакты',
+            'name': 'Артефактыпососи',
             'dict': artifacts,
             'buy_command': 'buy_artifact'
         }
@@ -496,12 +516,11 @@ class Dungeon:
         text = ''
         for potion_id, potion in inventory_dict['potions'].items():
             if potion['count'] > 0:
-                text = text + f'{potion["name"]} ({potion["count"]})'
-            else:
-                text = 'У вас нет зелий'
-        self.embed.add_field(name=f'Зелья:',
-                             value=text, inline=False)
-
+                text += f'{potion["name"]} ({potion["count"]})\n'
+        if text == '':
+            text = 'У вас нет зелий'
+        self.embed.add_field(name=f'```Зелья:```',
+                        value=text, inline=False)
         text = ''
         if len(inventory_dict['artifacts']) > 0:
             for item in inventory_dict['artifacts']:
@@ -573,17 +592,21 @@ class Dungeon:
     async def apply_potion(self, potion_id: int):
         for id, potion in self.potions.items():
             if id == potion_id:
-                print(RPG.potions[int(potion_id)])
-                print(RPG.potions[int(potion_id)]['effect'])
-                potion['count'] = potion['count'] - 1
-                if RPG.potions[int(potion_id)]['effect'] == 'health':
-                    self.health = self.health + ((potion['strength'] + 1) ** 2) * 5
-                if RPG.potions[int(potion_id)]['effect'] == 'damage':
-                    self.damage = self.health + ((potion['strength'] + 1) ** 2) * 5
-                if RPG.potions[int(potion_id)]['effect'] == 'defence':
-                    self.defence = self.health + ((potion['strength'] + 1) ** 2) * 5
-                await self.battle_enemy(self.enemy)
-
+                if potion['count'] != 0:
+                    potion['count'] = potion['count'] - 1
+                    if RPG.potions[int(potion_id)]['effect'] == 'health':
+                        self.health = self.health + ((potion['strength']) ** 2) * 5
+                    if RPG.potions[int(potion_id)]['effect'] == 'damage':
+                        self.damage = self.health + ((potion['strength']) ** 2) * 5
+                    if RPG.potions[int(potion_id)]['effect'] == 'defence':
+                        self.defence = self.health + ((potion['strength']) ** 2) * 5
+                    eco = get_economic()
+                    eco['members'][str(self.member.id)]['inventory']['potions'][potion_id]['count'] -= 1
+                    set_economic(eco)
+                    await self.battle_enemy(self.enemy)
+                else:
+                    await self.ctx.send('Ты аферист?')
+                    
 
     async def step(self):
         self.enemy['health'] = self.process_hit(self.enemy['health'], self.damage, 0)
@@ -605,7 +628,6 @@ class Dungeon:
             await self.defeat_dungeon()
 
         await self.battle_enemy(self.enemy)
-
 
     def process_hit(self, health: int, damage: int, armor: int):
         new_health = health - (damage + (damage * (random.random() - 0.5) // 2)) + (armor // 2)
@@ -645,11 +667,25 @@ class Dungeon:
         eco = get_economic()
         eco['members'][str(self.member.id)]['dungeon_timeout'] = time.time() + 36000
         set_economic(eco)
-        money = 0
+        coins = 0
         for mob in RPG.dungeons[self.dungeon_id]['mobs']:
-            money = money + (mob['health'] + mob['damage'])
-        money = money // 2
-        give_money(self.member, money)
+            coins = coins + (mob['health'] + mob['damage'])
+        coins = coins // 2
+
+        coin_multiplier = 0
+
+        role_ids = []
+
+        for role in self.member.roles:
+            role_ids.append(role.id)
+
+        for id, role in Economic.roles_shop.items():
+            if role['id'] in role_ids:
+                coin_multiplier = Economic.roles_shop[id]['coin_multiplier']
+
+        coins = coins * coin_multiplier
+        
+        give_money(self.member, coins)
         await self.original_channel.send(f'{self.member.mention}, Вы прошли данж {RPG.dungeons[self.dungeon_id]["name"]}!\n'
-                                         f'Вам начислено {money} $')
+                                         f'Вам начислено {coins} $')
         del self

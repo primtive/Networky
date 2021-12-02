@@ -27,7 +27,7 @@ daily_coins = 100
 # Answers settings
 
 daily_error = 'Вы уже собрали ежедневную награду сегодня.'
-daily_success = 'Вы собрали ежедневную награду в размере {} $'.format(daily_coins)
+daily_success = 'Вы собрали ежедневную награду в размере {} $'
 
 not_enough_money_error = 'У вас недостаточно денег для совершения операции'
 role_number_error = 'Введите корректный номер роли.'
