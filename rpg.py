@@ -415,7 +415,7 @@ class RPG:
             'buy_command': 'buy_potion'
         },
         4: {
-            'name': 'Артефактыпососи',
+            'name': 'Артефакты',
             'dict': artifacts,
             'buy_command': 'buy_artifact'
         }
@@ -672,7 +672,7 @@ class Dungeon:
             coins = coins + (mob['health'] + mob['damage'])
         coins = coins // 2
 
-        coin_multiplier = 0
+        coin_multiplier = 1
 
         role_ids = []
 

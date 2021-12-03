@@ -638,7 +638,7 @@ async def daily(ctx: SlashContext):
         eco['members'][str(ctx.author.id)]['daily'] = False
         economic.give_money(ctx.author, float(config.daily_coins))
         
-        coin_multiplier = 0
+        coin_multiplier = 1
         
         role_ids = []
         
