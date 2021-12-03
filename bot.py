@@ -186,9 +186,7 @@ async def say(ctx: SlashContext, text: str):
     if ctx.author != ctx.guild.owner:
         await send_for_three_seconds(ctx, config.upper_role_error)
         return None
-    await ctx.send(text)
-    msg = await ctx.reply('Отправил')
-    await msg.delete()
+    await ctx.channel.send(text)
 
 
 @slash.slash(name='say_dm',
