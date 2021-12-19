@@ -7,6 +7,7 @@ import json
 import datetime
 import config
 import random
+import sys
 from rpg import RPG, Dungeon, active_dungeons
 import economic
 from lottery import Lottery, lotteries
@@ -17,6 +18,9 @@ from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext, ComponentContext, manage_components, ButtonStyle
 from voting import votings, Voting
 from roman import toRoman
+from music import Music, active_voices
+
+sys.setrecursionlimit(1000000)
 
 print('starting')
 write_log('starting')
@@ -166,6 +170,15 @@ async def time_checker():
 
             set_economic(eco)
 
+        # news
+
+        if round(now_time) == 1640977199:
+            channel = client.get_channel(config.news_channel)
+            await channel.send('@here, с Новым годом!')
+
+        # online
+        
+        
         await asyncio.sleep(1)
 
 
@@ -686,7 +699,7 @@ async def buy_role(ctx: SlashContext, id: int):
         role = await get_role_by_id(ctx, economics.roles_shop[id]['id'])
         if not role in ctx.author.roles:
             if economic.get_money(ctx.author) >= economics.roles_shop[id]['price']:
-                economic.take_money(ctx.author, float(id))
+                economic.take_money(ctx.author, economics.roles_shop[id]['price'])
                 await ctx.author.add_roles(role)
                 await ctx.reply('Поздравляем с покупкой роли **' + role.name + '**!')
             else:
@@ -965,6 +978,71 @@ async def dungeon(ctx: SlashContext, id: int):
                                           'Вы сможете пойти в данж только через **' + str(datetime.timedelta(seconds=round(eco['members'][str(ctx.author.id)]['dungeon_timeout'] - time.time()))) + '**')
 
 
+#
+
+
+@slash.slash(name='join',
+             description='Подключает бота к голосовому каналу',
+             guild_ids=[config.guild])
+async def join(ctx: SlashContext):
+    if ctx.author.voice.channel:
+        if ctx.author.voice.channel in active_voices.keys():
+            await ctx.reply('Бот и так подключен к вашему голосовому каналу')
+        else:
+            for channel in active_voices.keys():
+                if channel.guild == ctx.guild:
+                    await active_voices[channel].delete()
+                    print('канал удален')
+                    break
+            await Music(client, ctx.author.voice.channel).connect()
+            await ctx.reply('Подключился')
+    else:
+        await ctx.reply(config.voice_channel_error)
+
+
+@slash.slash(name='play',
+             description='Включает музыку',
+             guild_ids=[config.guild])
+async def play(ctx: SlashContext, music: str):
+    if ctx.author.voice.channel:
+        if ctx.author.voice.channel in active_voices.keys():
+            await active_voices[ctx.author.voice.channel].play(ctx, music)
+        else:
+            for channel in active_voices.keys():
+                if channel.guild == ctx.guild:
+                    await active_voices[channel].delete()
+                    break
+            _music = Music(client, ctx.author.voice.channel)
+            await _music.connect()
+            await _music.play(ctx, music)
+    else:
+        await ctx.reply(config.voice_channel_error)
+        
+
+@slash.slash(name='leave',
+             description='Покидает голосовой канал',
+             guild_ids=[config.guild])
+async def leave(ctx: SlashContext):
+    is_leave = False
+    
+    for channel in active_voices.keys():
+        if channel.guild == ctx.guild:
+            await active_voices[channel].delete()
+            await ctx.reply('Ок👌')
+            is_leave = True
+            break
+    
+    if not is_leave:
+        await ctx.reply('Бот и так не подключен')
+
+
+@slash.slash(name='aboba',
+             description='Покидает голосовой канал',
+             guild_ids=[config.guild])
+async def aboba(ctx: SlashContext):
+    voice: discord.VoiceClient = await ctx.author.voice.channel.connect()
+    
+    await voice.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source='slava-marlow-snova-ya-napivayus-mp3.mp3'))
 
 #
 

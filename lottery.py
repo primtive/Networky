@@ -48,7 +48,7 @@ class Lottery:
                 msg = await ctx.reply(ctx.author.display_name + ', вы уже учавствуете')
                 self.spam_count[ctx.author] = self.spam_count[ctx.author] + 1
                 if self.spam_count[ctx.author] >= 5:
-                    await mute(ctx=ctx, member=ctx.author, muter=self.client.user, minutes=1)
+                    await mute(ctx=ctx, member=ctx.author, muter=self.client.user, time='1m')
                 await asyncio.sleep(3)
                 await msg.delete()
         else:
