@@ -10,6 +10,7 @@ import random
 import sys
 from rpg import RPG, Dungeon, active_dungeons
 import economic
+import journal
 from lottery import Lottery, lotteries
 import xml.etree.ElementTree as ET
 from utils import get_member_by_role, get_role_by_id, get_economic, set_economic, write_log
@@ -1043,6 +1044,53 @@ async def aboba(ctx: SlashContext):
     voice: discord.VoiceClient = await ctx.author.voice.channel.connect()
     
     await voice.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source='slava-marlow-snova-ya-napivayus-mp3.mp3'))
+
+
+#
+
+
+@slash.slash(name='diary',
+             description='Позволяет получить электронный дневник на определенную дату',
+             guild_ids=[config.guild])
+async def diary(ctx: SlashContext, date: str = datetime.datetime.today().strftime('%d.%m.%y')):
+
+    response = journal.get_diary(date)
+    print(response.text)
+    if response.status_code == 200:
+        result = json.loads(response.text)
+        if result['success']:
+            find = False
+            for day, data in result['data']['diary'].items():
+                if day.startswith(date.split('.')[0]):
+                    embed = discord.Embed(title='Дневник на ' + date,
+                                          color=config.embed_color)
+                    lessonNumbers = []
+                    for lesson in data:
+                        if lesson['lessonNumber'] not in lessonNumbers and int(lesson['lessonNumber']) < 7:
+                            embed.add_field(name=lesson['lessonNumber'] + '. ' + lesson['subject'],
+                                            value='Д/З: ' + lesson['previousHomework']['homework'] + '\nВремя: ' + lesson['lessonTime'],
+                                            inline=False)
+                            lessonNumbers.append(lesson['lessonNumber'])
+                    await ctx.reply(embed=embed)
+        else:
+            await ctx.reply('Произшла ошибка:\n\n' + result['message'])
+    else:
+        await ctx.reply('Произшла ошибка:\n\n' + str(response.status_code) + ': ' + response.text)
+
+
+@slash.slash(name='marks',
+             description='Получить выписку оценок',
+             guild_ids=[config.guild])
+async def marks(ctx: SlashContext, name: str, begin: str, end: str):
+    await journal.get_marks(ctx, name, begin, end)
+
+
+@slash.slash(name='final_marks',
+             description='Получить итоговые оценки',
+             guild_ids=[config.guild])
+async def final_marks(ctx: SlashContext, name: str):
+    await journal.get_final_marks(ctx, name)
+
 
 #
 

@@ -41,7 +41,6 @@ class Lottery:
         lotteries[self.name] = self
 
     async def take_part(self, ctx: ComponentContext):
-
         if ctx.author in self.takes_part:
             muted_role = await get_role_by_id(ctx, config.muted_role)
             if not muted_role in ctx.author.roles:
